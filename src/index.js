@@ -1,10 +1,8 @@
 var request = require('request-promise');
 var config = require('config');
 
-var htmlLogging = false;
-
 exports.handler = function(event, context, callback) {
-    loginConfig = config.get('whooing');
+    var loginConfig = config.get('whooing');
 
     var mainPage = {
         uri: 'https://whooing.com/',
@@ -36,7 +34,7 @@ exports.handler = function(event, context, callback) {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Encoding': 'gzip, deflate',
             'Accept-Language': 'ko,en-US;q=0.8,en;q=0.6',
-            'Referer': 'http://etoland.co.kr/'
+            'Referer': 'https://whooing.com'
         },
         jar: true,
         gzip: true,
@@ -62,7 +60,7 @@ exports.handler = function(event, context, callback) {
     }
 
     request(mainPage).then(function(html){
-        console.log(html.toString());
+        //console.log(html.toString());
         return request(loginPage);
     }).then(function(html) {
         console.log(html.toString());
