@@ -60,13 +60,15 @@ exports.handler = function(event, context, callback) {
     }
 
     request(mainPage).then(function(html){
-        //console.log(html.toString());
         return request(loginPage);
     }).then(function(html) {
-        console.log(html.toString());
         return request(attendPage);
     }).then(function(html){
-        console.log(html.toString());
+        if (html.indexOf('top_user_logout') > -1) {
+            console.log("Login success");
+        } else {
+            console.log(html.toString());
+        }
     }).catch(function(error) {
         if (error) {throw error};
     });
