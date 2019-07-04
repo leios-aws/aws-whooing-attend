@@ -19,7 +19,7 @@ exports.handler = function(event, context, callback) {
         gzip: true,
         followAllRedirects: true,
         encoding: null
-    }
+    };
     var loginPage = {
         uri: 'https://whooing.com/auth/login',
         method: 'POST',
@@ -40,7 +40,7 @@ exports.handler = function(event, context, callback) {
         gzip: true,
         followAllRedirects: true,
         encoding: null
-    }
+    };
     var attendPage = {
         uri: 'https://whooing.com/',
         method: 'POST',
@@ -57,7 +57,7 @@ exports.handler = function(event, context, callback) {
         gzip: true,
         followAllRedirects: true,
         encoding: null
-    }
+    };
 
     request(mainPage).then(function(html){
         return request(loginPage);
@@ -70,7 +70,9 @@ exports.handler = function(event, context, callback) {
             console.log(html.toString());
         }
     }).catch(function(error) {
-        if (error) {throw error};
+        if (error) {
+            throw error;
+        }
     });
 
     if (callback) {
