@@ -2,7 +2,7 @@ var request = require('request-promise');
 var config = require('config');
 
 exports.handler = function(event, context, callback) {
-    var loginConfig = config.get('whooing');
+    var authConfig = config.get('auth');
 
     var mainPage = {
         uri: 'https://whooing.com/',
@@ -24,8 +24,8 @@ exports.handler = function(event, context, callback) {
         uri: 'https://whooing.com/auth/login',
         method: 'POST',
         form: {
-            login: loginConfig.id,
-            password: loginConfig.pw,
+            login: authConfig.id,
+            password: authConfig.pw,
             submitting: '1',
             go_to: ''
         },
