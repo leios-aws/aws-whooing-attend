@@ -1,6 +1,6 @@
 {
   "name": "aws-whooing-attend",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "config": "^3.1.0",
+    "config": "^3.2.1",
     "request": "^2.88.0",
     "request-promise": "^4.2.4"
   }
