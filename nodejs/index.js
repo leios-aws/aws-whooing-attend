@@ -1,26 +1,35 @@
-var request = require('request-promise');
-var config = require('config');
+const request = require('request');
+const config = require('config');
+const async = require('async');
 
-exports.handler = function(event, context, callback) {
-    var authConfig = config.get('auth');
+var req = request.defaults({
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'ko,en-US;q=0.8,en;q=0.6'
+    },
+    jar: true,
+    gzip: true,
+    followAllRedirects: true,
+    encoding: null
+});
 
-    var mainPage = {
+var requestMainPage = function(callback) {
+    var option = {
         uri: 'https://whooing.com/',
         method: 'GET',
-        qs: {
-        },
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Encoding': 'gzip, deflate',
-            'Accept-Language': 'ko,en-US;q=0.8,en;q=0.6'
-        },
-        jar: true,
-        gzip: true,
-        followAllRedirects: true,
-        encoding: null
     };
-    var loginPage = {
+
+    req(option, function (err, response, body) {
+        console.log("Request Main Page");
+        callback(err, response, body);
+    });
+};
+
+var requestLoginPage = function(response, body, callback) {
+    var authConfig = config.get('auth');
+    var option = {
         uri: 'https://whooing.com/auth/login',
         method: 'POST',
         form: {
@@ -30,52 +39,51 @@ exports.handler = function(event, context, callback) {
             go_to: ''
         },
         headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Encoding': 'gzip, deflate',
-            'Accept-Language': 'ko,en-US;q=0.8,en;q=0.6',
             'Referer': 'https://whooing.com'
         },
-        jar: true,
-        gzip: true,
-        followAllRedirects: true,
-        encoding: null
     };
-    var attendPage = {
+
+    req(option, function (err, response, body) {
+        console.log("Request Login Page");
+        callback(err, response, body);
+    });
+};
+
+var requestAttendPage = function(response, body, callback) {
+    var option = {
         uri: 'https://whooing.com/',
         method: 'POST',
         form: {
             section_id: 's'
         },
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Encoding': 'gzip, deflate',
-            'Accept-Language': 'ko,en-US;q=0.8,en;q=0.6'
-        },
-        jar: true,
-        gzip: true,
-        followAllRedirects: true,
-        encoding: null
     };
 
-    request(mainPage).then(function(html){
-        return request(loginPage);
-    }).then(function(html) {
-        return request(attendPage);
-    }).then(function(html){
-        if (html.indexOf('top_user_logout') > -1) {
-            console.log("Login success");
-        } else {
-            console.log(html.toString());
+    req(option, function (err, response, body) {
+        console.log("Request Attend Page");
+        if (!err) {
+            if (body.indexOf('top_user_logout') > -1) {
+                console.log("Login success");
+            } else {
+                console.log("Login fail!");
+            }
         }
-    }).catch(function(error) {
-        if (error) {
-            throw error;
-        }
+        callback(err, response, body);
     });
 
-    if (callback) {
-        callback(null, 'Success');
-    }
+}
+
+exports.handler = function(event, context, callback) {
+    async.waterfall([
+        requestMainPage,
+        requestLoginPage,
+        requestAttendPage,
+    ], function (err) {
+        if (err) {
+            console.log(err);
+        }
+
+        if (callback) {
+            callback(null, 'Success');
+        }
+    })
 };
