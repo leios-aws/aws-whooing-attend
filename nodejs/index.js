@@ -15,19 +15,19 @@ var req = request.defaults({
     encoding: null
 });
 
-var requestMainPage = function(callback) {
+var requestMainPage = function (callback) {
     var option = {
         uri: 'https://whooing.com/',
         method: 'GET',
     };
 
-    req(option, function (err, response, body) {
+    req(option, function (e, r, b) {
         console.log("Request Main Page");
-        callback(err, response, body);
+        callback(e, r, b);
     });
 };
 
-var requestLoginPage = function(response, body, callback) {
+var requestLoginPage = function (response, body, callback) {
     var authConfig = config.get('auth');
     var option = {
         uri: 'https://whooing.com/auth/login',
@@ -43,13 +43,13 @@ var requestLoginPage = function(response, body, callback) {
         },
     };
 
-    req(option, function (err, response, body) {
+    req(option, function (e, r, b) {
         console.log("Request Login Page");
-        callback(err, response, body);
+        callback(e, r, b);
     });
 };
 
-var requestAttendPage = function(response, body, callback) {
+var requestAttendPage = function (response, body, callback) {
     var option = {
         uri: 'https://whooing.com/',
         method: 'POST',
@@ -58,21 +58,17 @@ var requestAttendPage = function(response, body, callback) {
         },
     };
 
-    req(option, function (err, response, body) {
+    req(option, function (e, r, b) {
         console.log("Request Attend Page");
-        if (!err) {
-            if (body.indexOf('top_user_logout') > -1) {
-                console.log("Login success");
-            } else {
-                console.log("Login fail!");
-            }
+        if (!e && b.indexOf('top_user_logout') < 0) {
+            callback("Login fail!", r, b);
+        } else {
+            callback(e, r, b);
         }
-        callback(err, response, body);
     });
+};
 
-}
-
-exports.handler = function(event, context, callback) {
+exports.handler = function (event, context, callback) {
     async.waterfall([
         requestMainPage,
         requestLoginPage,
@@ -85,5 +81,5 @@ exports.handler = function(event, context, callback) {
         if (callback) {
             callback(null, 'Success');
         }
-    })
+    });
 };
