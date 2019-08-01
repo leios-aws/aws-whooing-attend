@@ -12,22 +12,25 @@ var req = request.defaults({
     jar: true,
     gzip: true,
     followAllRedirects: true,
-    encoding: null
+    //encoding: null
 });
 
-var requestMainPage = function (callback) {
+var requestMainPage = function (result, callback) {
     var option = {
         uri: 'https://whooing.com/',
         method: 'GET',
     };
 
-    req(option, function (e, r, b) {
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
         console.log("Request Main Page");
-        callback(e, r, b);
+        callback(err, result);
     });
 };
 
-var requestLoginPage = function (response, body, callback) {
+var requestLoginPage = function (result, callback) {
     var authConfig = config.get('auth');
     var option = {
         uri: 'https://whooing.com/auth/login',
@@ -43,13 +46,16 @@ var requestLoginPage = function (response, body, callback) {
         },
     };
 
-    req(option, function (e, r, b) {
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
         console.log("Request Login Page");
-        callback(e, r, b);
+        callback(err, result);
     });
 };
 
-var requestAttendPage = function (response, body, callback) {
+var requestAttendPage = function (result, callback) {
     var option = {
         uri: 'https://whooing.com/',
         method: 'POST',
@@ -58,28 +64,65 @@ var requestAttendPage = function (response, body, callback) {
         },
     };
 
-    req(option, function (e, r, b) {
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
         console.log("Request Attend Page");
-        if (!e && b.indexOf('top_user_logout') < 0) {
-            callback("Login fail!", r, b);
+        if (!err && body.indexOf('top_user_logout') < 0) {
+            callback("Login fail!", result);
         } else {
-            callback(e, r, b);
+            callback(err, result);
         }
+    });
+};
+
+var checkPoint = function (result, callback) {
+    var option = {
+        uri: 'https://whooing.com/account/personal?ajax=true&_=1564623019847',
+        method: 'GET',
+        qs: {
+            ajax: true,
+            _: Date.now()
+        },
+    };
+
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
+        console.log("Check Point");
+
+        if (!err) {
+            var matches = body.match(/([0-9,]+)p &nbsp;/);
+            if (matches.index > -1) {
+                result.data.point = parseInt(matches[1].replace(/,/, ''), 10);
+            }
+        }
+        callback(err, result);
     });
 };
 
 exports.handler = function (event, context, callback) {
     async.waterfall([
+        function (callback) {
+            callback(null, { data: {} });
+        },
         requestMainPage,
         requestLoginPage,
         requestAttendPage,
-    ], function (err) {
+        checkPoint,
+    ], function (err, result) {
         if (err) {
             console.log(err);
+        } else {
+            console.log(result.data);
         }
 
+
+
         if (callback) {
-            callback(null, 'Success');
+            callback(null);
         }
     });
 };
