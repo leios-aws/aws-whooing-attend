@@ -1,6 +1,8 @@
 const request = require('request');
 const config = require('config');
 const async = require('async');
+const fs = require('fs');
+const path = require('path');
 
 var req = request.defaults({
     headers: {
@@ -100,6 +102,66 @@ var checkPoint = function (result, callback) {
             }
         }
         callback(err, result);
+    });
+};
+
+var download = function (year, base, callback) {
+    //
+    var option = {
+        uri: `https://whooing.com/export_to/excel/entries`,
+        method: 'GET',
+        qs: {
+            section_id: 's46385',
+            start_date: `${year}0101`,
+            end_date: `${year}1231`,
+            preset: 'p_y_2',
+            limit: 51
+        },
+    };
+
+    console.log(`Downloading ${year}0101 ~ ${year}1231`);
+    let file = fs.createWriteStream(path.join(base, `whooing-${year}0101-${year}1231.xls`));
+
+    req(option)
+        .pipe(file)
+        .on('finish', function () {
+            callback(null);
+        })
+        .on('error', function (err) {
+            callback(err);
+        });
+};
+
+exports.handler_backup = function (event, context, callback) {
+    var startYear = 2015;
+    var endYear = new Date().getFullYear();
+
+    async.waterfall([
+        function (callback) {
+            callback(null, { data: {} });
+        },
+        requestMainPage,
+        requestLoginPage,
+        requestAttendPage,
+        function (result, callback) {
+            var base = path.join("backup", Date.now().toString());
+            fs.mkdirSync(base, { recursive: true });
+            async.timesSeries((endYear - startYear + 1), function (n, callback) {
+                download(endYear - n, base, callback);
+            }, function (err) {
+                callback(err, result);
+            });
+        },
+    ], function (err, result) {
+        if (err) {
+            console.log(err);
+        } else {
+            console.log(result.data);
+        }
+
+        if (callback) {
+            callback(null);
+        }
     });
 };
 
