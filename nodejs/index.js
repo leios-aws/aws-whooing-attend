@@ -181,11 +181,7 @@ exports.handler = function (event, context, callback) {
         requestAttendPage,
         checkPoint,
     ], function (err, result) {
-        if (err) {
-            console.log(err);
-        } else {
-            console.log(result.data);
-        }
+        console.log({err: err, data: result.data});
 
         if (callback) {
             callback(null);
