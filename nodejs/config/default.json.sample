@@ -2,5 +2,8 @@
 	"auth": {
 		"id": "id",
 		"pw": "pw"
+	},
+	"whooing": {
+		"backup_base_dir": ""
 	}
 }

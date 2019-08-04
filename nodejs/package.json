@@ -1,10 +1,11 @@
 {
   "name": "aws-whooing-attend",
-  "version": "10.0.0",
+  "version": "11.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node -e \"require('./index.js').handler({key1: 'value1', key2: 'value2', key3: 'value3'})\""
+    "test": "node -e \"require('./index.js').handler({key1: 'value1', key2: 'value2', key3: 'value3'})\"",
+    "backup": "node -e \"require('./index.js').handler_backup({})\""
   },
   "author": "",
   "license": "ISC",
