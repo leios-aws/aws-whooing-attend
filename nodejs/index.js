@@ -3,6 +3,7 @@ const config = require('config');
 const async = require('async');
 const fs = require('fs');
 const path = require('path');
+const balance = require('./src/balance.js');
 
 var req = request.defaults({
     headers: {
@@ -180,6 +181,7 @@ exports.handler = function (event, context, callback) {
         requestLoginPage,
         requestAttendPage,
         checkPoint,
+        balance.processBalance,
     ], function (err, result) {
         console.log({err: err, data: result.data});
 
