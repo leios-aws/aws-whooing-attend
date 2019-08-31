@@ -45,7 +45,7 @@ var start = function (callback) {
             user_id: ""
         },
         balance_account_info: null,
-        report: {}
+        user: {}
     });
 };
 
@@ -178,7 +178,8 @@ var requestUser = function (result, callback) {
                 callback(body.message, result);
                 return;
             } else {
-                console.log(body);
+                //console.log(body);
+                result.user = body.results;
             }
         }
         callback(err, result);
@@ -548,7 +549,7 @@ exports.processBalance = function(result, callback) {
         loadAuth,
         requestAuth1,
         requestAuth2,
-        //requestUser,
+        requestUser,
         //requestSections,
         requestAccounts,
         requestEntries,
@@ -557,6 +558,8 @@ exports.processBalance = function(result, callback) {
     ], function (err, result) {
         if (err) {
             console.log(err);
+        } else {
+            result.data = {point: result.user.point}
         }
         callback(err, result);
     });

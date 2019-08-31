@@ -177,10 +177,10 @@ exports.handler = function (event, context, callback) {
         function (callback) {
             callback(null, { data: {} });
         },
-        requestMainPage,
-        requestLoginPage,
-        requestAttendPage,
-        checkPoint,
+        //requestMainPage,
+        //requestLoginPage,
+        //requestAttendPage,
+        //checkPoint,
         balance.processBalance,
     ], function (err, result) {
         console.log({err: err, data: result.data});
