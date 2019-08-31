@@ -9,12 +9,9 @@ const luxon = require('luxon');
 const TOKEN_PATH = 'config/whooing_token.json';
 var now;
 var today;
+var start_date;
+var end_date;
 var automated;
-
-var balance_account_id = 'x215';
-var giftcard_group_id = 'x173';
-var creditcard_group_id = 'x78';
-var checkcard_group_id = 'x227';
 
 function sha1(data) {
     return crypto.createHash("sha1").update(data, "binary").digest("hex");
@@ -47,6 +44,7 @@ var start = function (callback) {
             token_secret: "",
             user_id: ""
         },
+        balance_account_id: "",
         report: {}
     });
 };
@@ -269,9 +267,6 @@ var requestEntries = function (result, callback) {
 
     var ts = Math.floor(Date.now() / 1000);
 
-    var start_date = today.set({day: 1});
-    var end_date = today.set({day: 1}).plus({month: 1, day: -1});
-
     var whooingConfig = config.get('whooing');
     var option = {
         uri: 'https://whooing.com/api/entries.json',
@@ -314,9 +309,6 @@ var requestBs = function (result, callback) {
 
     var ts = Math.floor(Date.now() / 1000);
 
-    var start_date = today.set({day: 1});
-    var end_date = today.set({day: 1}).plus({month: 1, day: -1});
-
     var whooingConfig = config.get('whooing');
     var option = {
         uri: 'https://whooing.com/api/bs.json',
@@ -355,7 +347,6 @@ var requestUpdateEntry = function (result, entry, callback) {
     }
 
     var ts = Math.floor(Date.now() / 1000);
-    var end_date = today.set({day: 1}).plus({month: 1, day: -1});
 
     var whooingConfig = config.get('whooing');
     var option = {
@@ -402,7 +393,6 @@ var requestInsertEntry = function (result, entry, callback) {
     }
 
     var ts = Math.floor(Date.now() / 1000);
-    var end_date = today.set({day: 1}).plus({month: 1, day: -1});
 
     var whooingConfig = config.get('whooing');
     var option = {
@@ -442,14 +432,14 @@ var requestInsertEntry = function (result, entry, callback) {
     });
 };
 
-var filterAccountGroup = function(group_key, map_data) {
+var getBalanceCardList = function(liabilities) {
     var result = {};
     var found = false;
-    var t = parseInt(today.toFormat('yyyyMMdd'));
+    var t = parseInt(end_date.toFormat('yyyyMMdd'));
 
-    for (var key in map_data) {
-        var account = map_data[key];
-        if (key === group_key) {
+    for (var key in liabilities) {
+        var account = liabilities[key];
+        if (account.type === 'group' && account.memo.indexOf('카드대금자동정산') > -1) {
             found = true;
             continue;
         }
@@ -468,11 +458,26 @@ var filterAccountGroup = function(group_key, map_data) {
     return result;
 };
 
+var getBalanceAssetId = function(assets) {
+    var t = parseInt(end_date.toFormat('yyyyMMdd'));
+
+    for (var key in assets) {
+        var account = assets[key];
+        if (t < account.open_date || account.close_date < t) {
+            continue;
+        }
+
+        if (account.memo.indexOf('카드대금자동정산') > -1) {
+            return account.account_id;
+        }
+    }
+    return null;
+};
+
 var updateEntry = function(result, key, callback) {
-    //result.bs.liabilities.accounts[key]
     for (var i = 0; i < result.entries.rows.length; i++) {
         var entry = result.entries.rows[i];
-        if (entry.l_account_id === key && entry.r_account_id === balance_account_id) {
+        if (entry.l_account_id === key && entry.r_account_id === result.balance_account_id) {
             entry.money += result.bs.liabilities.accounts[key];
             requestUpdateEntry(result, entry, callback);
             return;
@@ -484,7 +489,7 @@ var updateEntry = function(result, key, callback) {
         l_account: "liabilities",
         r_account: "assets",
         l_account_id: key,
-        r_account_id: balance_account_id,
+        r_account_id: result.balance_account_id,
         item: `카드대금 ${category}`,
         money: result.bs.liabilities.accounts[key],
         memo: ''
@@ -493,7 +498,13 @@ var updateEntry = function(result, key, callback) {
 };
 
 var updateBalance = function(result, callback) {
-    var creditcard_accounts = filterAccountGroup(creditcard_group_id, result.accounts.liabilities);
+    var creditcard_accounts = getBalanceCardList(result.accounts.liabilities);
+    result.balance_account_id = getBalanceAssetId(result.accounts.assets);
+
+    if (result.balance_account_id === null || creditcard_accounts.length === 0) {
+        callback("Invalid setting", result);
+        return;
+    }
 
     async.mapValuesSeries(creditcard_accounts, function(account, key, callback) {
         if (result.bs.liabilities.accounts[key] !== 0) {
@@ -522,6 +533,8 @@ exports.make_auth =function(event, context, callback) {
 
 exports.processBalance = function(result, callback) {
     today = luxon.DateTime.local().setZone('Asia/Seoul');
+    start_date = today.set({day: 1});
+    end_date = today.set({day: 1}).plus({month: 1, day: -1});
     automated = true;
 
     async.waterfall([
