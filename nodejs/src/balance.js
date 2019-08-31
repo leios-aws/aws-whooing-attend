@@ -44,7 +44,7 @@ var start = function (callback) {
             token_secret: "",
             user_id: ""
         },
-        balance_account_id: "",
+        balance_account_info: null,
         report: {}
     });
 };
@@ -432,22 +432,14 @@ var requestInsertEntry = function (result, entry, callback) {
     });
 };
 
-var getBalanceCardList = function(liabilities) {
+var getCardList = function(liabilities) {
     var result = {};
-    var found = false;
     var t = parseInt(end_date.toFormat('yyyyMMdd'));
 
     for (var key in liabilities) {
         var account = liabilities[key];
-        if (account.type === 'group' && account.memo.indexOf('카드대금자동정산') > -1) {
-            found = true;
+        if (account.category !== 'creditcard') {
             continue;
-        }
-        if (!found) {
-            continue;
-        }
-        if (account.type === 'group') {
-            break;
         }
 
         if (t < account.open_date || account.close_date < t) {
@@ -456,9 +448,10 @@ var getBalanceCardList = function(liabilities) {
         result[key] = account;
     }
     return result;
-};
+}
 
-var getBalanceAssetId = function(assets) {
+
+var getBalanceAccountInfo = function(assets, liabilities) {
     var t = parseInt(end_date.toFormat('yyyyMMdd'));
 
     for (var key in assets) {
@@ -468,7 +461,18 @@ var getBalanceAssetId = function(assets) {
         }
 
         if (account.memo.indexOf('카드대금자동정산') > -1) {
-            return account.account_id;
+            return {type: "asset", title: account.title,  id: account.account_id};
+        }
+    }
+
+    for (var key in liabilities) {
+        var account = liabilities[key];
+        if (t < account.open_date || account.close_date < t) {
+            continue;
+        }
+
+        if (account.memo.indexOf('카드대금자동정산') > -1) {
+            return {type: "liabilities", title: account.title, id: account.account_id};
         }
     }
     return null;
@@ -477,7 +481,7 @@ var getBalanceAssetId = function(assets) {
 var updateEntry = function(result, key, callback) {
     for (var i = 0; i < result.entries.rows.length; i++) {
         var entry = result.entries.rows[i];
-        if (entry.l_account_id === key && entry.r_account_id === result.balance_account_id) {
+        if (entry.l_account_id === key && entry.r_account_id === result.balance_account_info.id) {
             entry.money += result.bs.liabilities.accounts[key];
             requestUpdateEntry(result, entry, callback);
             return;
@@ -487,9 +491,9 @@ var updateEntry = function(result, key, callback) {
     var category = result.accounts.liabilities[key].title.split('|')[0];
     var entry = {
         l_account: "liabilities",
-        r_account: "assets",
+        r_account: result.balance_account_info.type,
         l_account_id: key,
-        r_account_id: result.balance_account_id,
+        r_account_id: result.balance_account_info.id,
         item: `카드대금 ${category}`,
         money: result.bs.liabilities.accounts[key],
         memo: ''
@@ -498,10 +502,10 @@ var updateEntry = function(result, key, callback) {
 };
 
 var updateBalance = function(result, callback) {
-    var creditcard_accounts = getBalanceCardList(result.accounts.liabilities);
-    result.balance_account_id = getBalanceAssetId(result.accounts.assets);
+    var creditcard_accounts = getCardList(result.accounts.liabilities);
+    result.balance_account_info = getBalanceAccountInfo(result.accounts.assets, result.accounts.liabilities);
 
-    if (result.balance_account_id === null || creditcard_accounts.length === 0) {
+    if (result.balance_account_info === null || creditcard_accounts.length === 0) {
         callback("Invalid setting", result);
         return;
     }
