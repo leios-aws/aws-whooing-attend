@@ -9,7 +9,6 @@ const luxon = require('luxon');
 const TOKEN_PATH = 'config/whooing_token.json';
 var now;
 var today;
-var start_date;
 var end_date;
 var automated;
 
@@ -49,7 +48,7 @@ var start = function (callback) {
     });
 };
 
-var loadAuth = function(result, callback) {
+var loadAuth = function (result, callback) {
     fs.readFile(TOKEN_PATH, (err, token) => {
         if (!err) {
             console.log('Load token from', TOKEN_PATH);
@@ -433,7 +432,7 @@ var requestInsertEntry = function (result, entry, callback) {
     });
 };
 
-var getCardList = function(liabilities) {
+var getCardList = function (liabilities) {
     var result = {};
     var t = parseInt(end_date.toFormat('yyyyMMdd'));
 
@@ -452,7 +451,7 @@ var getCardList = function(liabilities) {
 }
 
 
-var getBalanceAccountInfo = function(assets, liabilities) {
+var getBalanceAccountInfo = function (assets, liabilities) {
     var t = parseInt(end_date.toFormat('yyyyMMdd'));
 
     for (var key in assets) {
@@ -462,7 +461,7 @@ var getBalanceAccountInfo = function(assets, liabilities) {
         }
 
         if (account.memo.indexOf('카드대금자동정산') > -1) {
-            return {type: "asset", title: account.title,  id: account.account_id};
+            return { type: "asset", title: account.title, id: account.account_id };
         }
     }
 
@@ -473,13 +472,13 @@ var getBalanceAccountInfo = function(assets, liabilities) {
         }
 
         if (account.memo.indexOf('카드대금자동정산') > -1) {
-            return {type: "liabilities", title: account.title, id: account.account_id};
+            return { type: "liabilities", title: account.title, id: account.account_id };
         }
     }
     return null;
 };
 
-var updateEntry = function(result, key, callback) {
+var updateEntry = function (result, key, callback) {
     for (var i = 0; i < result.entries.rows.length; i++) {
         var entry = result.entries.rows[i];
         if (entry.l_account_id === key && entry.r_account_id === result.balance_account_info.id) {
@@ -502,27 +501,42 @@ var updateEntry = function(result, key, callback) {
     requestInsertEntry(result, entry, callback);
 };
 
-var updateBalance = function(result, callback) {
+var updateBalance = function (result, callback) {
     var creditcard_accounts = getCardList(result.accounts.liabilities);
     result.balance_account_info = getBalanceAccountInfo(result.accounts.assets, result.accounts.liabilities);
 
     if (result.balance_account_info === null || creditcard_accounts.length === 0) {
-        callback("Invalid setting", result);
+        console.log("Asset is not defined!");
+        callback(null, result);
         return;
     }
 
-    async.mapValuesSeries(creditcard_accounts, function(account, key, callback) {
+    async.mapValuesSeries(creditcard_accounts, function (account, key, callback) {
         if (result.bs.liabilities.accounts[key] !== 0) {
             updateEntry(result, key, callback);
         } else {
             callback(null);
         }
-    }, function(err) {
+    }, function (err) {
         callback(err, result);
     });
 };
 
-exports.make_auth =function(event, context, callback) {
+var process = function (result, i, callback) {
+    end_date = today.plus({ month: i }).set({ day: 0 });
+    async.waterfall([
+        function (callback) {
+            callback(null, result);
+        },
+        requestEntries,
+        requestBs,
+        updateBalance,
+    ], function (err, result) {
+        callback(err, result);
+    });
+};
+
+exports.make_auth = function (event, context, callback) {
     automated = false;
     async.waterfall([
         start,
@@ -534,12 +548,10 @@ exports.make_auth =function(event, context, callback) {
             console.log(err);
         }
     });
-}
+};
 
-exports.processBalance = function(result, callback) {
+exports.processBalance = function (result, callback) {
     today = luxon.DateTime.local().setZone('Asia/Seoul');
-    start_date = today.set({day: 1});
-    end_date = today.set({day: 1}).plus({month: 1, day: -1});
     automated = true;
 
     async.waterfall([
@@ -552,15 +564,19 @@ exports.processBalance = function(result, callback) {
         requestUser,
         //requestSections,
         requestAccounts,
-        requestEntries,
-        requestBs,
-        updateBalance,
+        function (result, callback) {
+            async.timesSeries(3, function (i, callback) {
+                process(result, i - 1, callback);
+            }, function (err) {
+                callback(err, result);
+            });
+        },
     ], function (err, result) {
         if (err) {
             console.log(err);
         } else {
-            result.data = {point: result.user.point}
+            result.data = { point: result.user.point }
         }
         callback(err, result);
     });
-}
+};
