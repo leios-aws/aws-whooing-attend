@@ -445,6 +445,10 @@ var getCardList = function (liabilities) {
         if (t < account.open_date || account.close_date < t) {
             continue;
         }
+
+        if (account.memo.indexOf('월말자동정산') < 0) {
+            continue;
+        }
         result[key] = account;
     }
     return result;
@@ -460,7 +464,7 @@ var getBalanceAccountInfo = function (assets, liabilities) {
             continue;
         }
 
-        if (account.memo.indexOf('카드대금자동정산') > -1) {
+        if (account.memo.indexOf('카드대금항목') > -1) {
             return { type: "asset", title: account.title, id: account.account_id };
         }
     }
@@ -471,7 +475,7 @@ var getBalanceAccountInfo = function (assets, liabilities) {
             continue;
         }
 
-        if (account.memo.indexOf('카드대금자동정산') > -1) {
+        if (account.memo.indexOf('카드대금항목') > -1) {
             return { type: "liabilities", title: account.title, id: account.account_id };
         }
     }
