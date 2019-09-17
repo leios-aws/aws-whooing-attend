@@ -277,7 +277,7 @@ var requestEntries = function (result, callback) {
             "start_date": end_date.toFormat('yyyyMMdd'),
             "end_date": end_date.toFormat('yyyyMMdd'),
             "limit": 1000,
-            "item": "카드대금*"
+            "item": "카드대금*(자동정산)"
         },
         headers: {
             "X-API-KEY": `app_id=${whooingConfig.app_id},token=${result.access_token.token},signiture=${sha1(whooingConfig.app_secret + '|' + result.access_token.token_secret)},nounce=whooing-bot,timestamp=${ts}`
@@ -498,7 +498,7 @@ var updateEntry = function (result, key, callback) {
         r_account: result.balance_account_info.type,
         l_account_id: key,
         r_account_id: result.balance_account_info.id,
-        item: `카드대금 ${category}`,
+        item: `카드대금 ${category}(자동정산)`,
         money: result.bs.liabilities.accounts[key],
         memo: ''
     };
