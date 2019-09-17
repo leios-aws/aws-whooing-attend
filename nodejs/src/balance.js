@@ -527,7 +527,7 @@ var updateBalance = function (result, callback) {
 };
 
 var process = function (result, i, callback) {
-    end_date = today.plus({ month: i }).set({ day: 0 });
+    end_date = today.plus({ month: i }).set({ day: -1 });
     async.waterfall([
         function (callback) {
             callback(null, result);
