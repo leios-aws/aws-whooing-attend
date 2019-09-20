@@ -177,9 +177,9 @@ exports.handler = function (event, context, callback) {
         function (callback) {
             callback(null, { data: {} });
         },
-        //requestMainPage,
-        //requestLoginPage,
-        //requestAttendPage,
+        requestMainPage,
+        requestLoginPage,
+        requestAttendPage,
         //checkPoint,
         balance.processBalance,
     ], function (err, result) {
