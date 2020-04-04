@@ -11,6 +11,7 @@ var now;
 var today;
 var end_date;
 var automated;
+var term_month = 3;
 
 function sha1(data) {
     return crypto.createHash("sha1").update(data, "binary").digest("hex");
@@ -277,7 +278,7 @@ var requestEntries = function (result, callback) {
             "start_date": end_date.toFormat('yyyyMMdd'),
             "end_date": end_date.toFormat('yyyyMMdd'),
             "limit": 1000,
-            "item": "ì¹´ë“œ???ê¸?*(??™? •?‚°)"
+            "item": "ì¹´ë“œëŒ€ê¸ˆ*(ìë™ì •ì‚°)"
         },
         headers: {
             "X-API-KEY": `app_id=${whooingConfig.app_id},token=${result.access_token.token},signiture=${sha1(whooingConfig.app_secret + '|' + result.access_token.token_secret)},nounce=whooing-bot,timestamp=${ts}`
@@ -446,7 +447,7 @@ var getCardList = function (liabilities) {
             continue;
         }
 
-        if (account.memo.indexOf('?›”ë§ì?™? •?‚°') < 0) {
+        if (account.memo.indexOf('ì›”ë§ìë™ì •ì‚°') < 0) {
             continue;
         }
         result[key] = account;
@@ -464,7 +465,7 @@ var getBalanceAccountInfo = function (assets, liabilities) {
             continue;
         }
 
-        if (account.memo.indexOf('ì¹´ë“œ???ê¸ˆí•­ëª?') > -1) {
+        if (account.memo.indexOf('ì¹´ë“œëŒ€ê¸ˆí•­ëª©') > -1) {
             return { type: "asset", title: account.title, id: account.account_id };
         }
     }
@@ -475,7 +476,7 @@ var getBalanceAccountInfo = function (assets, liabilities) {
             continue;
         }
 
-        if (account.memo.indexOf('ì¹´ë“œ???ê¸ˆí•­ëª?') > -1) {
+        if (account.memo.indexOf('ì¹´ë“œëŒ€ê¸ˆí•­ëª©') > -1) {
             return { type: "liabilities", title: account.title, id: account.account_id };
         }
     }
@@ -498,7 +499,7 @@ var updateEntry = function (result, key, callback) {
         r_account: result.balance_account_info.type,
         l_account_id: key,
         r_account_id: result.balance_account_info.id,
-        item: `ì¹´ë“œ???ê¸? ${category}(??™? •?‚°)`,
+        item: `ì¹´ë“œëŒ€ê¸ˆ ${category}(ìë™ì •ì‚°)`,
         money: result.bs.liabilities.accounts[key],
         memo: ''
     };
@@ -557,7 +558,6 @@ exports.make_auth = function (event, context, callback) {
 exports.processBalance = function (result, callback) {
     today = luxon.DateTime.local().setZone('Asia/Seoul');
     automated = true;
-    term_month = 3;
 
     async.waterfall([
         function (callback) {
