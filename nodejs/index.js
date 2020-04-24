@@ -4,6 +4,7 @@ const async = require('async');
 const fs = require('fs');
 const path = require('path');
 const balance = require('./src/balance.js');
+const luxon = require('luxon');
 
 var req = request.defaults({
     headers: {
