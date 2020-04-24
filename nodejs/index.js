@@ -176,7 +176,7 @@ exports.handler_backup = function (event, context, callback) {
 exports.handler = function (event, context, callback) {
     async.waterfall([
         function (callback) {
-            callback(null, { data: {} });
+            callback(null, { ts: luxon.DateTime.local().setZone('Asia/Seoul').toFormat("yy-MM-dd HH:mm:ss"), data: {} });
         },
         requestMainPage,
         requestLoginPage,
@@ -184,7 +184,7 @@ exports.handler = function (event, context, callback) {
         //checkPoint,
         balance.processBalance,
     ], function (err, result) {
-        console.log({err: err, data: result.data});
+        console.log({err: err, ts: result.ts, data: result.data});
 
         if (callback) {
             callback(null);
