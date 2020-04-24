@@ -1,6 +1,6 @@
 {
   "name": "aws-whooing-attend",
-  "version": "11.0.12",
+  "version": "11.0.13",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,7 @@
   "dependencies": {
     "async": "^3.1.0",
     "config": "^3.2.1",
-    "luxon": "^1.17.2",
+    "luxon": "^1.23.0",
     "request": "^2.88.0"
   }
 }
