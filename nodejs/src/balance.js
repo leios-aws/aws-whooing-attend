@@ -295,7 +295,12 @@ var requestEntries = function (result, callback) {
                 callback(body.message, result);
                 return;
             } else {
-                result.entries = body.results;
+                async.each(body.results.rows, function(entry, innercallback) {
+                    requestDeleteEntry(result, entry, innercallback);
+                }, function(err, innerresult) {
+                    callback(err, result);
+                });
+                return;
             }
         }
         callback(err, result);
@@ -382,6 +387,43 @@ var requestUpdateEntry = function (result, entry, callback) {
             } else {
                 console.log(`entry updated: ${entry.item} (${result.accounts.liabilities[entry.l_account_id].title}) => ${entry.money}`);
             }
+        }
+        callback(err, result);
+    });
+};
+
+var requestDeleteEntry = function (result, entry, callback) {
+    if (result.access_token.token === "") {
+        callback("Forbidden", result);
+        return;
+    }
+
+    var ts = Math.floor(Date.now() / 1000);
+
+    var whooingConfig = config.get('whooing');
+    var option = {
+        uri: `https://whooing.com/api/entries/${entry.entry_id}.json`,
+        method: 'DELETE',
+        json: true,
+        headers: {
+            "X-API-KEY": `app_id=${whooingConfig.app_id},token=${result.access_token.token},signiture=${sha1(whooingConfig.app_secret + '|' + result.access_token.token_secret)},nounce=whooing-bot,timestamp=${ts}`
+        }
+    };
+
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
+        if (!err) {
+            //console.log(body);
+            if (body.code !== 200) {
+                callback(body.message, result);
+                return;
+            } else {
+                console.log(`entry deleted: ${entry.item} (${result.accounts.liabilities[entry.l_account_id].title}) => ${entry.money}`);
+            }
+        } else {
+            console.log(err);
         }
         callback(err, result);
     });
@@ -484,12 +526,14 @@ var getBalanceAccountInfo = function (assets, liabilities) {
 };
 
 var updateEntry = function (result, key, callback) {
-    for (var i = 0; i < result.entries.rows.length; i++) {
-        var entry = result.entries.rows[i];
-        if (entry.l_account_id === key && entry.r_account_id === result.balance_account_info.id) {
-            entry.money += result.bs.liabilities.accounts[key];
-            requestUpdateEntry(result, entry, callback);
-            return;
+    if (result.entries && result.entries.rows) {
+        for (var i = 0; i < result.entries.rows.length; i++) {
+            var entry = result.entries.rows[i];
+            if (entry.l_account_id === key && entry.r_account_id === result.balance_account_info.id) {
+                entry.money += result.bs.liabilities.accounts[key];
+                requestUpdateEntry(result, entry, callback);
+                return;
+            }
         }
     }
 
