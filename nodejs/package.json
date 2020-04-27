@@ -1,6 +1,6 @@
 {
   "name": "aws-whooing-attend",
-  "version": "11.0.13",
+  "version": "11.0.14",
   "description": "",
   "main": "index.js",
   "scripts": {
