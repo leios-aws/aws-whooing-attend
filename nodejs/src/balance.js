@@ -9,6 +9,7 @@ const luxon = require('luxon');
 const TOKEN_PATH = 'config/whooing_token.json';
 var now;
 var today;
+var start_date;
 var end_date;
 var automated;
 var term_month = 3;
@@ -361,7 +362,7 @@ var requestUpdateEntry = function (result, entry, callback) {
         json: true,
         form: {
             "section_id": whooingConfig.section_id,
-            "entry_date": end_date.toFormat('yyyyMMdd'),
+            "entry_date": entry.entry_date,
             "l_account": entry.l_account,
             "l_account_id": entry.l_account_id,
             "r_account": entry.r_account,
@@ -385,7 +386,15 @@ var requestUpdateEntry = function (result, entry, callback) {
                 callback(body.message, result);
                 return;
             } else {
-                console.log(`entry updated: ${entry.item} (${result.accounts.liabilities[entry.l_account_id].title}) => ${entry.money}`);
+                if (result.accounts.liabilities[entry.l_account_id]) {
+                    console.log(`[${entry.entry_date}] entry updated: ${entry.item} (${result.accounts.liabilities[entry.l_account_id].title}) => ${entry.money}`);
+                }
+                if (result.accounts.expenses[entry.l_account_id]) {
+                    console.log(`[${entry.entry_date}] entry updated: ${entry.item} (${result.accounts.expenses[entry.l_account_id].title}) => ${entry.money}`);
+                }
+                if (result.accounts.assets[entry.l_account_id]) {
+                    console.log(`[${entry.entry_date}] entry updated: ${entry.item} (${result.accounts.assets[entry.l_account_id].title}) => ${entry.money}`);
+                }
             }
         }
         callback(err, result);
@@ -444,7 +453,7 @@ var requestInsertEntry = function (result, entry, callback) {
         json: true,
         form: {
             "section_id": whooingConfig.section_id,
-            "entry_date": end_date.toFormat('yyyyMMdd'),
+            "entry_date": entry.entry_date,
             "l_account": entry.l_account,
             "l_account_id": entry.l_account_id,
             "r_account": entry.r_account,
@@ -468,7 +477,15 @@ var requestInsertEntry = function (result, entry, callback) {
                 callback(body.message, result);
                 return;
             } else {
-                console.log(`entry inserted: ${entry.item} (${result.accounts.liabilities[entry.l_account_id].title}) => ${entry.money}`);
+                if (result.accounts.liabilities[entry.l_account_id]) {
+                    console.log(`[${entry.entry_date}] entry inserted: ${entry.item} (${result.accounts.liabilities[entry.l_account_id].title}) => ${entry.money}`);
+                }
+                if (result.accounts.expenses[entry.l_account_id]) {
+                    console.log(`[${entry.entry_date}] entry inserted: ${entry.item} (${result.accounts.expenses[entry.l_account_id].title}) => ${entry.money}`);
+                }
+                if (result.accounts.assets[entry.l_account_id]) {
+                    console.log(`[${entry.entry_date}] entry inserted: ${entry.item} (${result.accounts.assets[entry.l_account_id].title}) => ${entry.money}`);
+                }
             }
         }
         callback(err, result);
@@ -543,6 +560,7 @@ var updateEntry = function (result, key, callback) {
         r_account: result.balance_account_info.type,
         l_account_id: key,
         r_account_id: result.balance_account_info.id,
+        entry_date: end_date.toFormat('yyyyMMdd'),
         item: `카드대금 ${category}(자동정산)`,
         money: result.bs.liabilities.accounts[key],
         memo: ''
@@ -571,7 +589,7 @@ var updateBalance = function (result, callback) {
     });
 };
 
-var process = function (result, i, callback) {
+var cardProcess = function (result, i, callback) {
     end_date = today.plus({ month: i }).set({ day: -1 });
     async.waterfall([
         function (callback) {
@@ -580,6 +598,165 @@ var process = function (result, i, callback) {
         requestEntries,
         requestBs,
         updateBalance,
+    ], function (err, result) {
+        callback(err, result);
+    });
+};
+
+var requestLivingEntries = function (result, callback) {
+    if (result.access_token.token === "") {
+        callback("Forbidden", result);
+        return;
+    }
+
+    var ts = Math.floor(Date.now() / 1000);
+
+    var whooingConfig = config.get('whooing');
+    var option = {
+        uri: 'https://whooing.com/api/entries.json',
+        method: 'GET',
+        json: true,
+        qs: {
+            "section_id": whooingConfig.section_id,
+            "start_date": start_date.toFormat('yyyyMMdd'),
+            "end_date": end_date.toFormat('yyyyMMdd'),
+            "limit": 1000,
+            "item": "생활비"
+        },
+        headers: {
+            "X-API-KEY": `app_id=${whooingConfig.app_id},token=${result.access_token.token},signiture=${sha1(whooingConfig.app_secret + '|' + result.access_token.token_secret)},nounce=whooing-bot,timestamp=${ts}`
+        }
+    };
+
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
+        if (!err) {
+            //console.log(body);
+            if (body.code !== 200) {
+                callback(body.message, result);
+                return;
+            } else {
+                result.entries = body.results;
+                callback(err, result);
+                return;
+            }
+        }
+        callback(err, result);
+    });
+};
+
+var requestLivingPl = function (result, callback) {
+    if (result.access_token.token === "") {
+        callback("Forbidden", result);
+        return;
+    }
+
+    var ts = Math.floor(Date.now() / 1000);
+
+    var whooingConfig = config.get('whooing');
+    var option = {
+        uri: 'https://whooing.com/api/pl.json',
+        method: 'GET',
+        json: true,
+        qs: {
+            "section_id": whooingConfig.section_id,
+            "start_date": start_date.toFormat('yyyyMMdd'),
+            "end_date": end_date.toFormat('yyyyMMdd'),
+        },
+        headers: {
+            "X-API-KEY": `app_id=${whooingConfig.app_id},token=${result.access_token.token},signiture=${sha1(whooingConfig.app_secret + '|' + result.access_token.token_secret)},nounce=whooing-bot,timestamp=${ts}`
+        }
+    };
+
+    req(option, function (err, response, body) {
+        result.response = response;
+        result.body = body;
+
+        if (!err) {
+            //console.log(body);
+            if (body.code !== 200) {
+                callback(body.message, result);
+                return;
+            } else {
+                result.pl = body.results;
+            }
+        }
+        callback(err, result);
+    });
+};
+
+var updateLivingBalance = function (result, callback) {
+    var living_expense_key = '';
+    var living_asset_key = '';
+
+    for (var key in result.accounts.assets) {
+        if (result.accounts.assets[key].memo.indexOf('생활비') >= 0) {
+            living_asset_key = key;
+            break;
+        }
+    }
+
+    for (var key in result.accounts.expenses) {
+        if (result.accounts.expenses[key].title === "생활비") {
+            living_expense_key = key;
+            break;
+        }
+    }
+
+    if (living_expense_key === '') {
+        console.log("Asset is not defined!");
+        callback(null, result);
+        return;
+    }
+
+    if (living_asset_key === '') {
+        console.log("Asset is not defined!");
+        callback(null, result);
+        return;
+    }
+
+    var living_expense_account_id = result.accounts.expenses[living_expense_key].account_id;
+    var living_asset_account_id = result.accounts.assets[living_asset_key].account_id;
+    var living_expense_total = result.pl.expenses.accounts[living_expense_account_id];
+
+    if (result.entries && result.entries.rows) {
+        for (var i = 0; i < result.entries.rows.length; i++) {
+            var entry = result.entries.rows[i];
+            if (entry.l_account_id === living_expense_account_id && entry.r_account_id === living_asset_account_id) {
+                entry.money += 1100000 - living_expense_total;
+                entry.entry_date = end_date.toFormat('yyyyMMdd');
+                requestUpdateEntry(result, entry, callback);
+                return;
+            }
+        }
+    }
+
+    var entry = {
+        l_account: "expenses",
+        r_account: "assets",
+        l_account_id: living_expense_account_id,
+        r_account_id: living_asset_account_id,
+        entry_date: end_date.toFormat('yyyyMMdd'),
+        item: `생활비`,
+        money: 1100000 - living_expense_total,
+        memo: ''
+    };
+    requestInsertEntry(result, entry, callback);
+};
+
+var livingProcess = function (result, callback) {
+    start_date = today.plus({month: 0}).set({ day: 1 });
+    end_date = today.plus({ month: 1 }).set({ day: 0 });
+
+    async.waterfall([
+        function (callback) {
+            callback(null, result);
+        },
+        requestLivingEntries,
+        requestLivingPl,
+        updateLivingBalance,
     ], function (err, result) {
         callback(err, result);
     });
@@ -615,11 +792,12 @@ exports.processBalance = function (result, callback) {
         requestAccounts,
         function (result, callback) {
             async.timesSeries(term_month, function (i, callback) {
-                process(result, (i + 2) - term_month, callback);
+                cardProcess(result, (i + 2) - term_month, callback);
             }, function (err) {
                 callback(err, result);
             });
         },
+        livingProcess,
     ], function (err, result) {
         if (err) {
             console.log(err);
