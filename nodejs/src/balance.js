@@ -12,7 +12,7 @@ var today;
 var start_date;
 var end_date;
 var automated;
-var term_month = 3;
+var term_month = 1;
 
 function sha1(data) {
     return crypto.createHash("sha1").update(data, "binary").digest("hex");
@@ -792,7 +792,7 @@ exports.processBalance = function (result, callback) {
         requestAccounts,
         function (result, callback) {
             async.timesSeries(term_month, function (i, callback) {
-                cardProcess(result, (i + 2) - term_month, callback);
+                cardProcess(result, i - 1, callback);
             }, function (err) {
                 callback(err, result);
             });
