@@ -591,6 +591,7 @@ var updateBalance = function (result, callback) {
 
 var cardProcess = function (result, i, callback) {
     end_date = today.plus({ month: i }).set({ day: -1 });
+    console.log("card process:", end_date.toFormat('yyyy-MM-dd'));
     async.waterfall([
         function (callback) {
             callback(null, result);
@@ -792,7 +793,7 @@ exports.processBalance = function (result, callback) {
         requestAccounts,
         function (result, callback) {
             async.timesSeries(term_month, function (i, callback) {
-                cardProcess(result, i - 1, callback);
+                cardProcess(result, (i + 2) - term_month, callback);
             }, function (err) {
                 callback(err, result);
             });
