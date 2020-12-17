@@ -12,7 +12,7 @@ var today;
 var start_date;
 var end_date;
 var automated;
-var term_month = 1;
+var term_month = 2;
 
 function sha1(data) {
     return crypto.createHash("sha1").update(data, "binary").digest("hex");
