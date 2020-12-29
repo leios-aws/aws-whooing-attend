@@ -14,6 +14,10 @@ var end_date;
 var automated;
 var term_month = 2;
 
+var bonus_budgets = {
+    '202012': 110 * 10000
+};
+
 function sha1(data) {
     return crypto.createHash("sha1").update(data, "binary").digest("hex");
 }
@@ -691,6 +695,7 @@ var requestLivingPl = function (result, callback) {
 var updateLivingBalance = function (result, callback) {
     var living_expense_key = '';
     var living_asset_key = '';
+    var budget = 110 * 10000;
 
     for (var key in result.accounts.assets) {
         if (result.accounts.assets[key].memo.indexOf('생활비') >= 0) {
@@ -722,11 +727,18 @@ var updateLivingBalance = function (result, callback) {
     var living_asset_account_id = result.accounts.assets[living_asset_key].account_id;
     var living_expense_total = result.pl.expenses.accounts[living_expense_account_id];
 
+    var keys = Object.keys(bonus_budgets);
+    for (var i = 0; i < keys.length; i++) {
+        if (keys[i] === end_date.toFormat('yyyyMM')) {
+            budget = 110 * 10000 + bonus_budgets[keys[i]];
+            break;
+        }
+    }
     if (result.entries && result.entries.rows) {
         for (var i = 0; i < result.entries.rows.length; i++) {
             var entry = result.entries.rows[i];
             if (entry.l_account_id === living_expense_account_id && entry.r_account_id === living_asset_account_id) {
-                entry.money += 1100000 - living_expense_total;
+                entry.money += budget - living_expense_total;
                 entry.entry_date = end_date.toFormat('yyyyMMdd');
                 requestUpdateEntry(result, entry, callback);
                 return;
