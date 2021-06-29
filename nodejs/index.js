@@ -21,7 +21,7 @@ var req = request.defaults({
 
 var requestMainPage = function (result, callback) {
     var option = {
-        uri: 'https://new.whooing.com/',
+        uri: 'https://whooing.com/',
         method: 'GET',
     };
 
@@ -37,7 +37,7 @@ var requestMainPage = function (result, callback) {
 var requestLoginPage = function (result, callback) {
     var authConfig = config.get('auth');
     var option = {
-        uri: 'https://new.whooing.com/auth/login',
+        uri: 'https://whooing.com/auth/login',
         method: 'POST',
         form: {
             email: authConfig.id,
@@ -46,7 +46,7 @@ var requestLoginPage = function (result, callback) {
             remember: 'y'
         },
         headers: {
-            'Referer': 'https://new.whooing.com'
+            'Referer': 'https://whooing.com'
         },
     };
 
@@ -61,11 +61,8 @@ var requestLoginPage = function (result, callback) {
 
 var requestAttendPage = function (result, callback) {
     var option = {
-        uri: 'https://new.whooing.com/',
-        method: 'POST',
-        form: {
-            section_id: 's'
-        },
+        uri: 'https://whooing.com/',
+        method: 'GET',
     };
 
     req(option, function (err, response, body) {
@@ -74,6 +71,7 @@ var requestAttendPage = function (result, callback) {
 
         console.log("Request Attend Page");
         if (!err && body.indexOf('conf.username = ') < 0) {
+            console.log(body);
             callback("Login fail!", result);
         } else {
             callback(err, result);
