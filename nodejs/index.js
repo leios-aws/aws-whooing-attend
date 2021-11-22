@@ -54,7 +54,7 @@ var requestLoginPage = function (result, callback) {
         result.response = response;
         result.body = body;
 
-        console.log("Request Login Page");
+        console.log("Request Login Page", result);
         callback(err, result);
     });
 };
@@ -176,11 +176,11 @@ exports.handler = function (event, context, callback) {
         function (callback) {
             callback(null, { ts: luxon.DateTime.local().setZone('Asia/Seoul').toFormat("yy-MM-dd HH:mm:ss"), data: {} });
         },
-        requestMainPage,
-        requestLoginPage,
-        requestAttendPage,
-        //checkPoint,
         balance.processBalance,
+        //requestMainPage,
+        //requestLoginPage,
+        //requestAttendPage,
+        //checkPoint,
     ], function (err, result) {
         console.log({err: err, ts: result.ts, data: result.data});
 
