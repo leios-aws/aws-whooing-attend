@@ -594,7 +594,7 @@ var updateBalance = function (result, callback) {
 };
 
 var cardProcess = function (result, i, callback) {
-    end_date = today.plus({ month: i }).set({ day: -1 });
+    end_date = today.plus({ month: i }).set({ day: 0 });
     console.log("card process:", end_date.toFormat('yyyy-MM-dd'));
     async.waterfall([
         function (callback) {
