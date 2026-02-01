@@ -415,7 +415,7 @@ var requestDeleteEntry = function (result, entry, callback) {
 
     var whooingConfig = config.get('whooing');
     var option = {
-        uri: `https://whooing.com/api/entries/${entry.entry_id}.json`,
+        uri: `https://whooing.com/api/entries/${entry.entry_id}/${whooingConfig.section_id}.json`,
         method: 'DELETE',
         json: true,
         headers: {
